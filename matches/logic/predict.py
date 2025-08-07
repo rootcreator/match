@@ -1,4 +1,4 @@
-from matches.logic.feature_engineering import calculate_form, calculate_strength, count_injuries
+from matches.logic.feature_training import calculate_form, calculate_strength, count_injuries
 
 def extract_features(match):
     home = match.home_team
