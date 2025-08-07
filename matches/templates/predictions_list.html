@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Predictions Dashboard</title>
+</head>
+<body>
+    <h1>Latest Predictions ({{ version }})</h1>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Match</th>
+            <th>Prediction</th>
+            <th>Confidence</th>
+            <th>Odds (H/D/A)</th>
+            <th>Result</th>
+        </tr>
+        {% for p in predictions %}
+        <tr>
+            <td>{{ p.match }}</td>
+            <td>{{ p.result_pred }}</td>
+            <td>{{ p.confidence }}</td>
+            <td>{{ p.fair_odds_home }}/{{ p.fair_odds_draw }}/{{ p.fair_odds_away }}</td>
+            <td>{{ p.match.result }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

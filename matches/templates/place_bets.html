@@ -1,0 +1,6 @@
+<h1>Place a Virtual Bet</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Place Bet</button>
+</form>
