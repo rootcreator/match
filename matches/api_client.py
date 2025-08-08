@@ -15,7 +15,7 @@ def get_leagues():
     response = requests.get(url, headers=HEADERS)
     return response.json()
 
-def get_teams(league_id=39, season=2023):  # EPL example
+def get_teams(league_id=39, season=2025):  # EPL example
     url = f'{BASE_URL}/teams'
     params = {'league': league_id, 'season': season}
     response = requests.get(url, headers=HEADERS, params=params)

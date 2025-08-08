@@ -11,7 +11,7 @@ class Command(BaseCommand):
             team_info = entry['team']
             name = team_info['name']
             api_id = team_info['id']
-            league = "Premier League"  # or manually map by league_id
+            league = "Bundesliga"  # or manually map by league_id
 
             team, created = Team.objects.get_or_create(
                 api_id=api_id,

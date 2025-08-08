@@ -1,0 +1,6 @@
+python manage.py settle_bets
+python manage.py sync_fixtures
+python manage.py sync_teams
+python manage.py sync_past_matches
+python manage.py sync_players
+python manage.py train_model
