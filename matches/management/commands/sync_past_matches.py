@@ -10,7 +10,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         league_id = 39  # EPL
         season = 2023
-        past_fixtures = get_past_fixtures(league_id=league_id, season=season, count=50)
+        past_fixtures = get_past_fixtures(league_id=league_id, season=season, count=100)
 
         for item in past_fixtures['response']:
             fixture = item['fixture']

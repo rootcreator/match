@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Sync Fixtures</h1>
+<form method="post">{% csrf_token %}
+    <label>League Name:</label><br>
+    <input type="text" name="league_name" required><br><br>
+
+    <label>Country:</label><br>
+    <input type="text" name="country" required><br><br>
+
+    <label>Season:</label><br>
+    <input type="number" name="season" value="2025" required><br><br>
+
+    <label>Number of Fixtures:</label><br>
+    <input type="number" name="next" value="15" required><br><br>
+
+    <button type="submit" class="button">Sync</button>
+</form>
+{% endblock %}

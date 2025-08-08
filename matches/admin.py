@@ -74,13 +74,40 @@ class FixtureAdmin(admin.ModelAdmin):
     list_display = ("id", "date", "status", "home_team", "away_team")
     list_filter = ("status", "date")
     search_fields = ("home_team__name", "away_team__name")
-    actions = ["sync_upcoming_fixtures_action"]
 
-    def sync_upcoming_fixtures_action(self, request, queryset):
-        call_command("sync_fixtures")
-        self.message_user(request, "✅ Upcoming fixtures synced successfully.")
+    change_list_template = "admin/fixtures_changelist.html"
 
-    sync_upcoming_fixtures_action.short_description = "Sync Upcoming Fixtures from API"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "sync-fixtures/",
+                self.admin_site.admin_view(self.sync_fixtures_view),
+                name="matches_fixture_sync_fixtures",  # Note underscores instead of dash
+            ),
+        ]
+        return custom_urls + urls
+
+    def sync_fixtures_view(self, request):
+        if request.method == "POST":
+            league_name = request.POST.get("league_name")
+            country = request.POST.get("country")
+            season = request.POST.get("season")
+            next_n = request.POST.get("next")
+
+            call_command(
+                "sync_fixtures",
+                league_name=league_name,
+                country=country,
+                season=int(season),
+                next=int(next_n)
+            )
+            messages.success(request, "✅ Fixtures synced successfully.")
+            return redirect("..")
+
+        return render(request, "admin/sync_fixtures_form.html")
+
 
 
 @admin.register(Match)
