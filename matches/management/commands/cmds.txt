@@ -8,5 +8,8 @@ python manage.py train_model
 
 python manage.py sync_teams --premier-league-england --season 2024
 python manage.py sync_teams --bundesliga-germany --season 2024
-python manage.py sync_teams --la-liga-spain --season 2024
+python manage.py sync_teams --la-liga-spain --season 2025
 
+
+
+python manage.py sync_fixtures --league-name "Premier League" --country "England" --season 2025 --next 15
