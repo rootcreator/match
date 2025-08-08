@@ -18,8 +18,5 @@ psycopg2-binary>=2.9.5  # Use only in development; use `psycopg2` in production
 # Deployment
 gunicorn>=21.2.0
 
-# Optional: Load environment variables securely
-python-dotenv>=1.0.0
-
 # Optional: Use whitenoise to serve static files in production
 whitenoise>=6.5.0
