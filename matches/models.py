@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Team(models.Model):
     name = models.CharField(max_length=100)
@@ -7,7 +8,6 @@ class Team(models.Model):
 
     def __str__(self):
         return self.name
-
 
 class Fixture(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -18,6 +18,7 @@ class Fixture(models.Model):
 
     def __str__(self):
         return f"{self.home_team} vs {self.away_team}"
+
 class Player(models.Model):
     name = models.CharField(max_length=100)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
@@ -39,7 +40,6 @@ class Match(models.Model):
     def __str__(self):
         return f"{self.home_team.name} vs {self.away_team.name}"
 
-
 class Prediction(models.Model):
     match = models.OneToOneField(Match, on_delete=models.CASCADE)
     result_pred = models.CharField(max_length=10, choices=[('win', 'Win'), ('draw', 'Draw'), ('loss', 'Loss')])
@@ -52,10 +52,6 @@ class Prediction(models.Model):
 
     def __str__(self):
         return f"Prediction for {self.match}"
-        
-        
-        
-from django.contrib.auth.models import User
 
 class UserPrediction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
