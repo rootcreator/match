@@ -1,16 +1,15 @@
-from matches.models import Match, Prediction
+from matches.models import Match, Prediction, Fixture
 from matches.logic.predict import extract_features
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-import numpy as np
 
 label_map = {0: 'win', 1: 'draw', 2: 'loss'}
 reverse_map = {'win': 0, 'draw': 1, 'loss': 2}
 
 def train_and_predict():
+    # TRAIN FROM PAST MATCHES
     past_matches = Match.objects.exclude(result__isnull=True)
-
     X, y = [], []
 
     for match in past_matches:
@@ -28,17 +27,22 @@ def train_and_predict():
     if not X:
         return {"status": "fail", "reason": "No historical data"}
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     accuracy = accuracy_score(y_test, model.predict(X_test))
 
-    upcoming = Match.objects.filter(result__isnull=True)
+    # PREDICT FOR UPCOMING FIXTURES
+    upcoming_fixtures = Fixture.objects.filter(status__icontains="Not Started")
+    matches_predicted = 0
 
-    for match in upcoming:
-        features = extract_features(match)
-        X_match = [[
+    for fixture in upcoming_fixtures:
+        # Assuming extract_features can handle Fixture objects
+        features = extract_features(fixture)
+        X_fixture = [[
             features['home_form'],
             features['away_form'],
             features['home_strength'],
@@ -47,11 +51,11 @@ def train_and_predict():
             features['away_injuries']
         ]]
 
-        pred = model.predict(X_match)[0]
-        probs = model.predict_proba(X_match)[0]
+        pred = model.predict(X_fixture)[0]
+        probs = model.predict_proba(X_fixture)[0]
 
         Prediction.objects.update_or_create(
-            match=match,
+            fixture=fixture,
             defaults={
                 'result_pred': label_map[pred],
                 'confidence': float(max(probs)),
@@ -61,5 +65,10 @@ def train_and_predict():
                 'fair_odds_away': round(1 / probs[2], 2),
             }
         )
+        matches_predicted += 1
 
-    return {"status": "success", "accuracy": round(accuracy, 4), "matches_predicted": upcoming.count()}
+    return {
+        "status": "success",
+        "accuracy": round(accuracy, 4),
+        "matches_predicted": matches_predicted
+    }

@@ -41,7 +41,7 @@ class Match(models.Model):
         return f"{self.home_team.name} vs {self.away_team.name}"
 
 class Prediction(models.Model):
-    match = models.OneToOneField(Match, on_delete=models.CASCADE)
+    fixture = models.ForeignKey(Fixture, on_delete=models.CASCADE)
     result_pred = models.CharField(max_length=10, choices=[('win', 'Win'), ('draw', 'Draw'), ('loss', 'Loss')])
     confidence = models.FloatField()
     goal_diff = models.IntegerField()
@@ -51,7 +51,7 @@ class Prediction(models.Model):
     model_version = models.CharField(max_length=20, default='v1')  # 🔁 Add this
 
     def __str__(self):
-        return f"Prediction for {self.match}"
+        return f"Prediction for {self.fixture}"
 
 class UserPrediction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
