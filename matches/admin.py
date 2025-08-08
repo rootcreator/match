@@ -3,24 +3,57 @@ from django.core.management import call_command
 from .models import Team, Player, Match, Prediction, Fixture, UserPrediction, Bet
 from matches.logic.train_and_predict import train_and_predict
 
+from django.urls import path
+from django.shortcuts import render, redirect
+from django.core.management import call_command
+from django.contrib import messages
+from .models import Team
+
+# Import major leagues from your sync_teams command
+from matches.management.commands.sync_teams import Command as SyncTeamsCommand
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "league", "api_id")
     search_fields = ("name", "league")
-    actions = ["sync_teams_action"]
 
-    def sync_teams_action(self, request, queryset):
-        call_command("sync_teams")
-        self.message_user(request, "✅ Teams synced successfully.")
+    change_list_template = "admin/team_changelist.html"
 
-    sync_teams_action.short_description = "Sync Teams from API"
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path("sync_teams_form/", self.admin_site.admin_view(self.sync_teams_form), name="sync_teams_form"),
+        ]
+        return custom_urls + urls
 
-    def sync_players_action(self, request, queryset):
-        call_command("sync_players")
-        self.message_user(request, "✅ Players synced for all teams.")
+    def sync_teams_form(self, request):
+        if request.method == "POST":
+            league_slug = request.POST.get("league")
+            season = request.POST.get("season")
 
-    sync_players_action.short_description = "Sync Players for All Teams"
+            if not league_slug or not season:
+                messages.error(request, "Please select both league and season.")
+            else:
+                call_command("sync_teams", f"--{league_slug}", "--season", season)
+                messages.success(
+                    request,
+                    f"✅ Teams synced successfully for {league_slug.replace('-', ' ').title()} ({season})"
+                )
+                return redirect("..")
+
+        # ✅ Build a dummy parser to trigger add_arguments and get league_map
+        from argparse import ArgumentParser
+        temp_cmd = SyncTeamsCommand()
+        parser = ArgumentParser()
+        temp_cmd.add_arguments(parser)
+        league_options = sorted(temp_cmd.league_map.keys())
+
+        return render(request, "admin/sync_teams_form.html", {
+            "title": "Sync Teams from API",
+            "league_options": league_options,
+        })
+
+
 
 
 @admin.register(Player)

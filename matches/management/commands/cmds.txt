@@ -4,3 +4,9 @@ python manage.py sync_teams
 python manage.py sync_past_matches
 python manage.py sync_players
 python manage.py train_model
+
+
+python manage.py sync_teams --premier-league-england --season 2024
+python manage.py sync_teams --bundesliga-germany --season 2024
+python manage.py sync_teams --la-liga-spain --season 2024
+

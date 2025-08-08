@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Sync Teams from API</h1>
+
+<form method="post" style="margin-top:20px;">
+    {% csrf_token %}
+    <div>
+        <label for="league">Select League:</label>
+        <select name="league" id="league" required>
+            <option value="">-- Choose League --</option>
+            {% for league in league_options %}
+                <option value="{{ league }}">{{ league|title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div style="margin-top:10px;">
+        <label for="season">Season:</label>
+        <input type="number" name="season" id="season" min="2000" max="2100" required>
+    </div>
+
+    <div style="margin-top:20px;">
+        <button type="submit" class="default">Sync Teams</button>
+        <a href=".." class="button">Cancel</a>
+    </div>
+</form>
+{% endblock %}

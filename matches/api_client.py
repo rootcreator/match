@@ -15,12 +15,44 @@ def get_leagues():
     response = requests.get(url, headers=HEADERS)
     return response.json()
 
-def get_teams(league_id=39, season=2025):  # EPL example
+def get_teams(league_id, season):
     url = f'{BASE_URL}/teams'
     params = {'league': league_id, 'season': season}
     response = requests.get(url, headers=HEADERS, params=params)
     return response.json()
 
+def get_league_by_id(league_id):
+    """
+    Fetch league details (name, country, etc.) from API-Football by league_id.
+    """
+    url = f"{BASE_URL}/leagues"
+    params = {"id": league_id}
+    response = requests.get(url, headers=HEADERS, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        if data['response']:
+            return data['response'][0]['league']['name']
+        else:
+            return None
+    else:
+        raise Exception(f"API Error {response.status_code}: {response.text}")
+
+def get_league_id_by_name(league_name, season):
+    """
+    Find a league_id from API-Football by its name and season.
+    Case-insensitive match.
+    """
+    url = f"{BASE_URL}/leagues"
+    params = {"season": season}
+    response = requests.get(url, headers=HEADERS, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        for item in data['response']:
+            if item['league']['name'].lower() == league_name.lower():
+                return item['league']['id']
+        return None
+    else:
+        raise Exception(f"API Error {response.status_code}: {response.text}")
 
 
 def get_fixtures(next_n=10):
