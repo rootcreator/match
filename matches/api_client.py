@@ -54,15 +54,38 @@ def get_league_id_by_name(league_name, season):
     else:
         raise Exception(f"API Error {response.status_code}: {response.text}")
 
-
-def get_fixtures(next_n=10):
+def get_league_id_by_name_and_country(league_name, country_name, season):
     """
-    Fetch the next N fixtures using API-Football v3.
+    Find a league_id from API-Football by its name and country for a given season.
+    Case-insensitive match for both.
+    """
+    url = f"{BASE_URL}/leagues"
+    params = {"season": season}
+    response = requests.get(url, headers=HEADERS, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        for item in data['response']:
+            if (
+                item['league']['name'].lower() == league_name.lower() and
+                item['country']['name'].lower() == country_name.lower()
+            ):
+                return item['league']['id']
+        return None
+    else:
+        raise Exception(f"API Error {response.status_code}: {response.text}")
+
+
+def get_fixtures(league_id=None, season=None, next_n=10):
+    """
+    Fetch the next N fixtures, optionally filtered by league and season.
     """
     url = f"{BASE_URL}/fixtures"
-    params = {
-        "next": next_n
-    }
+    params = {"next": next_n}
+
+    if league_id:
+        params["league"] = league_id
+    if season:
+        params["season"] = season
 
     response = requests.get(url, headers=HEADERS, params=params)
 
@@ -70,6 +93,7 @@ def get_fixtures(next_n=10):
         return response.json()
     else:
         raise Exception(f"API Error {response.status_code}: {response.text}")
+
         
         
 def get_players_by_team(team_id, season=2023):

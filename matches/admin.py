@@ -54,8 +54,6 @@ class TeamAdmin(admin.ModelAdmin):
         })
 
 
-
-
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "team", "position", "injured")
@@ -79,7 +77,7 @@ class FixtureAdmin(admin.ModelAdmin):
     actions = ["sync_upcoming_fixtures_action"]
 
     def sync_upcoming_fixtures_action(self, request, queryset):
-        call_command("sync_upcoming_fixtures")
+        call_command("sync_fixtures")
         self.message_user(request, "✅ Upcoming fixtures synced successfully.")
 
     sync_upcoming_fixtures_action.short_description = "Sync Upcoming Fixtures from API"
@@ -90,7 +88,24 @@ class MatchAdmin(admin.ModelAdmin):
     list_display = ("id", "fixture_id", "home_team", "away_team", "date", "result")
     list_filter = ("result", "date")
     search_fields = ("home_team__name", "away_team__name")
-    actions = ["run_training_and_prediction", "sync_past_matches_action"]
+    actions = ["sync_past_matches_action"]
+
+    def sync_past_matches_action(self, request, queryset):
+        call_command("sync_past_matches")
+        self.message_user(request, "✅ Past matches synced successfully.")
+
+    sync_past_matches_action.short_description = "Sync Past Matches from API"
+
+
+@admin.register(Prediction)
+class PredictionAdmin(admin.ModelAdmin):
+    list_display = (
+        "fixture", "result_pred", "confidence", "goal_diff",
+        "fair_odds_home", "fair_odds_draw", "fair_odds_away", "model_version"
+    )
+    list_filter = ("result_pred", "model_version")
+    search_fields = ("fixture__home_team__name", "fixture__away_team__name")
+    actions = ["run_training_and_prediction"]
 
     def run_training_and_prediction(self, request, queryset):
         result = train_and_predict()
@@ -108,21 +123,6 @@ class MatchAdmin(admin.ModelAdmin):
 
     run_training_and_prediction.short_description = "Train & Predict Upcoming Matches"
 
-    def sync_past_matches_action(self, request, queryset):
-        call_command("sync_past_matches")
-        self.message_user(request, "✅ Past matches synced successfully.")
-
-    sync_past_matches_action.short_description = "Sync Past Matches from API"
-
-
-@admin.register(Prediction)
-class PredictionAdmin(admin.ModelAdmin):
-    list_display = (
-        "fixture", "result_pred", "confidence", "goal_diff",
-        "fair_odds_home", "fair_odds_draw", "fair_odds_away", "model_version"
-    )
-    list_filter = ("result_pred", "model_version")
-    search_fields = ("match__home_team__name", "match__away_team__name")
 
 
 @admin.register(UserPrediction)
