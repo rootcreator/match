@@ -1,13 +1,14 @@
+# telegram_bot/views.py (your webhook view)
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from telegram import Update, Bot
 from telegram.ext import Dispatcher
 
-from tenants.models import Tenant, User, set_current_tenant
+from tenants.models import Tenant, User, OnboardingState, set_current_tenant
 from .dispatcher import setup_dispatcher
 
-TOKEN = "8084516709:AAFZiSWDBm_raXMqUEpDqF4_GrOgqvgxe64"
+TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
 bot = Bot(token=TOKEN)
 dispatcher = Dispatcher(bot, None, use_context=True)
 setup_dispatcher(dispatcher)
@@ -32,11 +33,11 @@ def webhook(request):
     user = None
 
     if telegram_user_id:
-        # 1. Try to find tenant by tenant owner Telegram user ID
+        # Try tenant owner lookup
         tenant = Tenant.objects.filter(telegram_owner_user_id=telegram_user_id).first()
 
-        if tenant is None:
-            # 2. Try to find user and tenant by telegram_user_id
+        if not tenant:
+            # Try user lookup
             user = User.objects.filter(telegram_user_id=telegram_user_id).first()
             if user:
                 tenant = user.tenant
@@ -45,15 +46,23 @@ def webhook(request):
             set_current_tenant(tenant)
 
         else:
-            # Tenant/user unknown — handle onboarding here
-            # For example, reply via bot or set a flag to ask for tenant code
-            # You can also skip set_current_tenant to block processing
-            pass
+            # No tenant/user found → onboarding prompt
+            onboarding, created = OnboardingState.objects.get_or_create(
+                telegram_user_id=telegram_user_id,
+                defaults={"state": "awaiting_email"}
+            )
+            if created or onboarding.state != "completed":
+                bot.send_message(
+                    chat_id=telegram_user_id,
+                    text="Welcome! Please send me your email address to get started."
+                )
+                # Skip further processing; wait for user input on onboarding
+                return JsonResponse({"status": "onboarding started"})
 
     else:
-        # No user ID found in update — proceed with caution or reject
+        # No Telegram user ID found in update
         pass
 
-    # Now process the update as usual
+    # Process update (commands and messages)
     dispatcher.process_update(update)
     return JsonResponse({"status": "ok"})
