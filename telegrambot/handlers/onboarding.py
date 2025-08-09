@@ -13,7 +13,7 @@ def onboarding_handler(update: Update, context: CallbackContext):
     try:
         onboarding = OnboardingState.objects.get(telegram_user_id=telegram_user_id)
     except OnboardingState.DoesNotExist:
-        # Not onboarding, let other handlers process
+        # Not in onboarding state — let other handlers handle this
         return
 
     if onboarding.state == "awaiting_email":
@@ -37,20 +37,18 @@ def onboarding_handler(update: Update, context: CallbackContext):
 
         onboarding.temp_phone = text
 
-        # Process tenant/user creation or lookup
         email_domain = onboarding.temp_email.split("@")[-1].lower()
         tenant = Tenant.objects.filter(domain=email_domain).first()
 
         if not tenant:
-            # Create new tenant with slug from domain and telegram owner = this user
             tenant = Tenant.objects.create(
                 name=email_domain,
                 slug=email_domain.replace(".", "-"),
                 domain=email_domain,
-                telegram_owner_user_id=telegram_user_id
+                telegram_owner_user_id=telegram_user_id  # Owner is this telegram user
             )
 
-        # Create or update user
+        # Create or update user with telegram_user_id (explicitly passed)
         user, created = User.objects.update_or_create(
             telegram_user_id=telegram_user_id,
             defaults={
@@ -61,15 +59,17 @@ def onboarding_handler(update: Update, context: CallbackContext):
             }
         )
 
+        # Set tenant context for this session
         set_current_tenant(tenant)
 
         onboarding.state = "completed"
         onboarding.save()
 
         update.message.reply_text(
-            f"Thanks for registering! You're now linked to tenant '{tenant.name}'. You can start using the bot."
+            f"Thanks for registering! Your Telegram ID ({telegram_user_id}) is now linked. "
+            f"You are associated with tenant '{tenant.name}'. You can now use the bot."
         )
 
     elif onboarding.state == "completed":
-        # Onboarding done, let other handlers process
+        # Already onboarded; let other handlers take over
         return
