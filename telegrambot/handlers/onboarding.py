@@ -1,4 +1,5 @@
 # telegram_bot/handlers/onboarding.py
+"""
 from telegram import Update
 from telegram.ext import CallbackContext
 from tenants.models import OnboardingState, Tenant, User
@@ -73,3 +74,4 @@ def onboarding_handler(update: Update, context: CallbackContext):
     elif onboarding.state == "completed":
         # Already onboarded; let other handlers take over
         return
+"""
