@@ -1,4 +1,5 @@
 # telegram_bot/dispatcher.py
+"""
 from telegram.ext import CommandHandler, MessageHandler, CallbackQueryHandler, filters
 from .handlers.start import start
 from .handlers.predict import predict_command, nextmatch
@@ -18,3 +19,4 @@ def setup_dispatcher(dp):
     dp.add_handler(MessageHandler(filters.TEXT, handle_text))
     
     dp.add_handler(CallbackQueryHandler(inline_handler))
+"""
