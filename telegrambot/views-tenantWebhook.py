@@ -1,4 +1,5 @@
 # telegram_bot/views.py (your webhook view)
+"""
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -66,3 +67,4 @@ def webhook(request):
     # Process update (commands and messages)
     dispatcher.process_update(update)
     return JsonResponse({"status": "ok"})
+"""
