@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import CallbackContext
 from matches.models import Match
-from logic.feature_training import calculate_form
+from matches.logic.feature_training import calculate_form
 
 def inline_handler(update: Update, context: CallbackContext):
     query = update.callback_query

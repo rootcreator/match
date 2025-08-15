@@ -1,3 +1,13 @@
+import tempfile
+from django import forms
+from django.shortcuts import render, redirect
+from django.urls import path
+from django.contrib import admin, messages
+from django.core.management import call_command
+from .models import Team, Player, Match, Prediction, Fixture, UserPrediction, Bet
+from matches.logic.train_and_predict import train_and_predict
+
+# Existing imports...
 from django.contrib import admin
 from django.core.management import call_command
 from .models import Team, Player, Match, Prediction, Fixture, UserPrediction, Bet
@@ -12,21 +22,32 @@ from .models import Team
 # Import major leagues from your sync_teams command
 from matches.management.commands.sync_teams import Command as SyncTeamsCommand
 
+
+class CsvImportForm(forms.Form):
+    csv_file = forms.FileField(label="Select CSV file")
+
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "league", "api_id")
     search_fields = ("name", "league")
-
     change_list_template = "admin/team_changelist.html"
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
             path("sync_teams_form/", self.admin_site.admin_view(self.sync_teams_form), name="sync_teams_form"),
+            path('import-csv/', self.admin_site.admin_view(self.import_csv_view), name='team_import_csv'),
         ]
         return custom_urls + urls
 
     def sync_teams_form(self, request):
+        # your existing code
+        from argparse import ArgumentParser
+        temp_cmd = SyncTeamsCommand()
+        parser = ArgumentParser()
+        temp_cmd.add_arguments(parser)
+        league_options = sorted(temp_cmd.league_map.keys())
+
         if request.method == "POST":
             league_slug = request.POST.get("league")
             season = request.POST.get("season")
@@ -41,18 +62,34 @@ class TeamAdmin(admin.ModelAdmin):
                 )
                 return redirect("..")
 
-        # ✅ Build a dummy parser to trigger add_arguments and get league_map
-        from argparse import ArgumentParser
-        temp_cmd = SyncTeamsCommand()
-        parser = ArgumentParser()
-        temp_cmd.add_arguments(parser)
-        league_options = sorted(temp_cmd.league_map.keys())
-
         return render(request, "admin/sync_teams_form.html", {
             "title": "Sync Teams from API",
             "league_options": league_options,
         })
 
+    def import_csv_view(self, request):
+        if request.method == "POST":
+            form = CsvImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                csv_file = form.cleaned_data['csv_file']
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    for chunk in csv_file.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+                try:
+                    Team.import_from_csv(tmp_path)
+                    messages.success(request, "Teams imported successfully!")
+                except Exception as e:
+                    messages.error(request, f"Import failed: {e}")
+                return redirect("..")
+        else:
+            form = CsvImportForm()
+        context = dict(
+            self.admin_site.each_context(request),
+            form=form,
+            title="Import Teams from CSV",
+        )
+        return render(request, "admin/import_csv_form.html", context)
 
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
@@ -60,13 +97,88 @@ class PlayerAdmin(admin.ModelAdmin):
     list_filter = ("position", "injured", "team")
     search_fields = ("name",)
     actions = ["sync_players_action"]
+    change_list_template = "admin/player_changelist.html"
 
     def sync_players_action(self, request, queryset):
-        from django.core.management import call_command
         call_command("sync_players")
         self.message_user(request, "✅ Players synced for all teams.")
-
     sync_players_action.short_description = "Sync Players for All Teams"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('import-csv/', self.admin_site.admin_view(self.import_csv_view), name='matches_player_import_csv'),
+        ]
+        return custom_urls + urls
+
+    def import_csv_view(self, request):
+        if request.method == "POST":
+            form = CsvImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                csv_file = form.cleaned_data['csv_file']
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    for chunk in csv_file.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+                try:
+                    Player.import_from_csv(tmp_path)
+                    messages.success(request, "Players imported successfully!")
+                except Exception as e:
+                    messages.error(request, f"Import failed: {e}")
+                return redirect("..")
+        else:
+            form = CsvImportForm()
+        context = dict(
+            self.admin_site.each_context(request),
+            form=form,
+            title="Import Players from CSV",
+        )
+        return render(request, "admin/import_csv_form.html", context)
+
+
+@admin.register(Match)
+class MatchAdmin(admin.ModelAdmin):
+    list_display = ("id", "fixture_id", "home_team", "away_team", "date", "result")
+    list_filter = ("result", "date")
+    search_fields = ("home_team__name", "away_team__name")
+    actions = ["sync_past_matches_action"]
+    change_list_template = "admin/match_changelist.html"
+
+    def sync_past_matches_action(self, request, queryset):
+        call_command("sync_past_matches")
+        self.message_user(request, "✅ Past matches synced successfully.")
+    sync_past_matches_action.short_description = "Sync Past Matches from API"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('import-csv/', self.admin_site.admin_view(self.import_csv_view), name='matches_match_import_csv'),
+        ]
+        return custom_urls + urls
+
+    def import_csv_view(self, request):
+        if request.method == "POST":
+            form = CsvImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                csv_file = form.cleaned_data['csv_file']
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    for chunk in csv_file.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+                try:
+                    Match.import_from_csv(tmp_path)
+                    messages.success(request, "Matches imported successfully!")
+                except Exception as e:
+                    messages.error(request, f"Import failed: {e}")
+                return redirect("..")
+        else:
+            form = CsvImportForm()
+        context = dict(
+            self.admin_site.each_context(request),
+            form=form,
+            title="Import Matches from CSV",
+        )
+        return render(request, "admin/import_csv_form.html", context)
 
 
 @admin.register(Fixture)
@@ -74,18 +186,13 @@ class FixtureAdmin(admin.ModelAdmin):
     list_display = ("id", "date", "status", "home_team", "away_team")
     list_filter = ("status", "date")
     search_fields = ("home_team__name", "away_team__name")
-
     change_list_template = "admin/fixtures_changelist.html"
-
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path(
-                "sync-fixtures/",
-                self.admin_site.admin_view(self.sync_fixtures_view),
-                name="matches_fixture_sync_fixtures",  # Note underscores instead of dash
-            ),
+            path("sync-fixtures/", self.admin_site.admin_view(self.sync_fixtures_view), name="matches_fixture_sync_fixtures"),
+            path('import-csv/', self.admin_site.admin_view(self.import_csv_view), name='matches_fixture_import_csv'),
         ]
         return custom_urls + urls
 
@@ -105,24 +212,31 @@ class FixtureAdmin(admin.ModelAdmin):
             )
             messages.success(request, "✅ Fixtures synced successfully.")
             return redirect("..")
-
         return render(request, "admin/sync_fixtures_form.html")
 
-
-
-@admin.register(Match)
-class MatchAdmin(admin.ModelAdmin):
-    list_display = ("id", "fixture_id", "home_team", "away_team", "date", "result")
-    list_filter = ("result", "date")
-    search_fields = ("home_team__name", "away_team__name")
-    actions = ["sync_past_matches_action"]
-
-    def sync_past_matches_action(self, request, queryset):
-        call_command("sync_past_matches")
-        self.message_user(request, "✅ Past matches synced successfully.")
-
-    sync_past_matches_action.short_description = "Sync Past Matches from API"
-
+    def import_csv_view(self, request):
+        if request.method == "POST":
+            form = CsvImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                csv_file = form.cleaned_data['csv_file']
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    for chunk in csv_file.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+                try:
+                    Fixture.import_from_csv(tmp_path)
+                    messages.success(request, "Fixtures imported successfully!")
+                except Exception as e:
+                    messages.error(request, f"Import failed: {e}")
+                return redirect("..")
+        else:
+            form = CsvImportForm()
+        context = dict(
+            self.admin_site.each_context(request),
+            form=form,
+            title="Import Fixtures from CSV",
+        )
+        return render(request, "admin/import_csv_form.html", context)
 
 @admin.register(Prediction)
 class PredictionAdmin(admin.ModelAdmin):
@@ -150,14 +264,11 @@ class PredictionAdmin(admin.ModelAdmin):
 
     run_training_and_prediction.short_description = "Train & Predict Upcoming Matches"
 
-
-
 @admin.register(UserPrediction)
 class UserPredictionAdmin(admin.ModelAdmin):
     list_display = ("user", "match", "predicted_result", "created_at")
     list_filter = ("predicted_result", "created_at")
     search_fields = ("user__username", "match__home_team__name", "match__away_team__name")
-
 
 @admin.register(Bet)
 class BetAdmin(admin.ModelAdmin):

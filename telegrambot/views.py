@@ -1,25 +1,28 @@
+# telegrambot/views.py
+
 import json
-import os
-import joblib
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from telegram import Update, Bot
-from telegram.ext import Dispatcher
+from telegram.ext import ApplicationBuilder
 
-from .dispatcher import setup_dispatcher
+from .dispatcher import setup_application
 
 TOKEN = "8084516709:AAFZiSWDBm_raXMqUEpDqF4_GrOgqvgxe64"
-bot = Bot(token=TOKEN)
 
-# Create dispatcher once globally
-dispatcher = Dispatcher(bot, None, use_context=True)
-setup_dispatcher(dispatcher)
+# Create your Application once globally
+application = ApplicationBuilder().token(TOKEN).build()
+setup_application(application)
 
 @csrf_exempt
 def webhook(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        update = Update.de_json(data, bot)
-        dispatcher.process_update(update)
+        update = Update.de_json(data)
+        
+        # Process update asynchronously by passing it to application
+        application.update_queue.put(update)
+        
         return JsonResponse({"status": "ok"})
-    return JsonResponse({"status": "only POST allowed"})
+    else:
+        return JsonResponse({"status": "only POST allowed"})

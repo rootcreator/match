@@ -13,7 +13,7 @@ def prediction_overview(request):
 
     correct = 0
     evaluated = 0
-    for p in Prediction.objects.select_related('match'):
+    for p in Prediction.objects.select_related('fixture'):
         if p.match.result:
             evaluated += 1
             if p.match.result == p.result_pred:

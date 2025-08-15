@@ -96,7 +96,7 @@ def get_fixtures(league_id=None, season=None, next_n=10):
 
         
         
-def get_players_by_team(team_id, season=2023):
+def get_players_by_team(team_id, season=2025):
     url = f"{BASE_URL}/players"
     params = {
         'team': team_id,
@@ -109,7 +109,7 @@ def get_players_by_team(team_id, season=2023):
         raise Exception(f"API Error {response.status_code}: {response.text}")
         
         
-def get_past_fixtures(league_id=39, season=2023, count=50):
+def get_past_fixtures(league_id=39, season=2024, count=380):
     url = f"{BASE_URL}/fixtures"
     params = {
         'league': league_id,

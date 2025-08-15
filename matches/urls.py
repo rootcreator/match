@@ -9,12 +9,17 @@ from matches.views_dashboard import (
     compare_versions,
 )
 from matches.views_ui import predictions_template_view
+from .views_landing import LandingPageView
+
 
 # Router registration for ViewSets
 router = DefaultRouter()
 router.register(r'predictions', PredictionViewSet, basename='prediction')
 
+
 urlpatterns = [
+    
+    path('', LandingPageView.as_view(), name='landing'),
     # ViewSet-based API endpoints
     path('api/', include(router.urls)),
 
